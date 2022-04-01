@@ -1,22 +1,30 @@
-import ExtendedAcroFormMixin from './pdf-kit-extensions/ExtendedAcroFormMixin';
-import PDFEmbeddedFont from './pdf-kit-extensions/PDFEmbeddedFont';
-import PDFKit from '@foliojs-fork/pdfkit';
-import { isStandardFont } from './pdf-kit-extensions/StandardFonts';
+import ExtendedAcroFormMixin from "./pdf-kit-extensions/ExtendedAcroFormMixin";
+import PDFEmbeddedFont from "./pdf-kit-extensions/PDFEmbeddedFont";
+import PDFKit from "@foliojs-fork/pdfkit";
+import { isStandardFont } from "./pdf-kit-extensions/StandardFonts";
 
 const typeName = (bold, italics) => {
-	let type = 'normal';
+	let type = "normal";
 	if (bold && italics) {
-		type = 'bolditalics';
+		type = "bolditalics";
 	} else if (bold) {
-		type = 'bold';
+		type = "bold";
 	} else if (italics) {
-		type = 'italics';
+		type = "italics";
 	}
 	return type;
 };
- 
+
 class PDFDocument extends PDFKit {
-	constructor(fonts = {}, images = {}, patterns = {}, options = {}, virtualfs = null, subsetFonts = true) {
+	constructor(
+		fonts = {},
+		images = {},
+		patterns = {},
+		attachments = {},
+		options = {},
+		virtualfs = null,
+		subsetFonts = true
+	) {
 		super(options);
 
 		this.fonts = {};
@@ -29,7 +37,7 @@ class PDFDocument extends PDFKit {
 					normal: fontDef.normal,
 					bold: fontDef.bold,
 					italics: fontDef.italics,
-					bolditalics: fontDef.bolditalics
+					bolditalics: fontDef.bolditalics,
 				};
 			}
 		}
@@ -38,11 +46,18 @@ class PDFDocument extends PDFKit {
 		for (let pattern in patterns) {
 			if (patterns.hasOwnProperty(pattern)) {
 				let patternDef = patterns[pattern];
-				this.patterns[pattern] = this.pattern(patternDef.boundingBox, patternDef.xStep, patternDef.yStep, patternDef.pattern, patternDef.colored);
+				this.patterns[pattern] = this.pattern(
+					patternDef.boundingBox,
+					patternDef.xStep,
+					patternDef.yStep,
+					patternDef.pattern,
+					patternDef.colored
+				);
 			}
 		}
 
 		this.images = images;
+		this.attachments = attachments;
 		this.virtualfs = virtualfs;
 		this.subsetFonts = subsetFonts; //TODO maybe automatically set this flag
 	}
@@ -63,7 +78,9 @@ class PDFDocument extends PDFKit {
 	provideFont(familyName, bold, italics) {
 		let type = this.getFontType(bold, italics);
 		if (this.getFontFile(familyName, bold, italics) === null) {
-			throw new Error(`Font '${familyName}' in style '${type}' is not defined in the font section of the document definition.`);
+			throw new Error(
+				`Font '${familyName}' in style '${type}' is not defined in the font section of the document definition.`
+			);
 		}
 
 		this.fontCache[familyName] = this.fontCache[familyName] || {};
@@ -78,13 +95,9 @@ class PDFDocument extends PDFKit {
 				def[0] = this.virtualfs.readFileSync(def[0]);
 			}
 
-			if (this.subsetFonts == false && !isStandardFont(def[0])) { 
-				this._font = new PDFEmbeddedFont(
-					this, 
-					def[0],
-					`F${++this._fontCount}`,
-				);
-			
+			if (this.subsetFonts == false && !isStandardFont(def[0])) {
+				this._font = new PDFEmbeddedFont(this, def[0], `F${++this._fontCount}`);
+
 				this._fontFamilies[def[0]] = this._font;
 				this._fontFamilies[this._font.name] = this._font;
 
@@ -98,7 +111,7 @@ class PDFDocument extends PDFKit {
 	}
 
 	provideImage(src) {
-		const realImageSrc = src => {
+		const realImageSrc = (src) => {
 			let image = this.images[src];
 
 			if (!image) {
@@ -109,12 +122,12 @@ class PDFDocument extends PDFKit {
 				return this.virtualfs.readFileSync(image);
 			}
 
-			let index = image.indexOf('base64,');
+			let index = image.indexOf("base64,");
 			if (index < 0) {
 				return this.images[src];
 			}
 
-			return Buffer.from(image.substring(index + 7), 'base64');
+			return Buffer.from(image.substring(index + 7), "base64");
 		};
 
 		if (this._imageRegistry[src]) {
@@ -126,10 +139,12 @@ class PDFDocument extends PDFKit {
 		try {
 			image = this.openImage(realImageSrc(src));
 			if (!image) {
-				throw new Error('No image');
+				throw new Error("No image");
 			}
 		} catch (error) {
-			throw new Error(`Invalid image: ${error.toString()}\nImages dictionary should contain dataURL entries (or local file paths in node.js)`);
+			throw new Error(
+				`Invalid image: ${error.toString()}\nImages dictionary should contain dataURL entries (or local file paths in node.js)`
+			);
 		}
 
 		image.embed(this);
@@ -150,11 +165,36 @@ class PDFDocument extends PDFKit {
 		return null;
 	}
 
+	provideAttachment(src) {
+		const checkRequired = (obj) => {
+			if (!obj) {
+				throw new Error("No attachment");
+			}
+			if (!obj.src) {
+				throw new Error('The "src" key is required for attachments');
+			}
+
+			return obj;
+		};
+
+		if (typeof src === "object") {
+			return checkRequired(src);
+		}
+
+		let attachment = checkRequired(this.attachments[src]);
+
+		if (this.virtualfs && this.virtualfs.existsSync(attachment.src)) {
+			return this.virtualfs.readFileSync(attachment.src);
+		}
+
+		return attachment;
+	}
+
 	setOpenActionAsPrint() {
 		let printActionRef = this.ref({
-			Type: 'Action',
-			S: 'Named',
-			N: 'Print'
+			Type: "Action",
+			S: "Named",
+			N: "Print",
 		});
 		this._root.data.OpenAction = printActionRef;
 		printActionRef.end();

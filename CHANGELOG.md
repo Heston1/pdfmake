@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Attachments embedding
+- Support passing headers to request for loading font files and images via URL adresses
+
+## 0.3.0-beta.1 - 2022-01-01
+
 - Port code base to ES6+
 - Unify interface for node and browser **(breaking change)**
 - All methods return promise instead of using callback **(breaking change)**

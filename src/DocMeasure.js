@@ -1,11 +1,11 @@
-import TextInlines from './TextInlines';
-import StyleContextStack from './StyleContextStack';
-import ColumnCalculator from './columnCalculator';
-import { defaultTableLayout } from './tableLayouts';
-import { isString, isNumber, isObject } from './helpers/variableType';
-import { stringifyNode, getNodeId, getNodeMargin } from './helpers/node';
-import { pack } from './helpers/tools';
-import qrEncoder from './qrEnc.js';
+import TextInlines from "./TextInlines";
+import StyleContextStack from "./StyleContextStack";
+import ColumnCalculator from "./columnCalculator";
+import { defaultTableLayout } from "./tableLayouts";
+import { isString, isNumber, isObject } from "./helpers/variableType";
+import { stringifyNode, getNodeId, getNodeMargin } from "./helpers/node";
+import { pack } from "./helpers/tools";
+import qrEncoder from "./qrEnc.js";
 
 class DocMeasure {
 	constructor(
@@ -61,11 +61,14 @@ class DocMeasure {
 				return extendMargins(this.measureCanvas(node));
 			} else if (node.qr) {
 				return extendMargins(this.measureQr(node));
+			} else if (node.attachment) {
+				return extendMargins(this.measureAttachment(node));
 			} else if (node.acroform) {
 				return extendMargins(this.measureAcroForm(node));
-			}
-			else {
-				throw new Error(`Unrecognized document structure: ${stringifyNode(node)}`);
+			} else {
+				throw new Error(
+					`Unrecognized document structure: ${stringifyNode(node)}`
+				);
 			}
 		});
 
@@ -83,39 +86,53 @@ class DocMeasure {
 
 	measureImageWithDimensions(node, dimensions) {
 		if (node.fit) {
-			let factor = (dimensions.width / dimensions.height > node.fit[0] / node.fit[1]) ? node.fit[0] / dimensions.width : node.fit[1] / dimensions.height;
+			let factor =
+				dimensions.width / dimensions.height > node.fit[0] / node.fit[1]
+					? node.fit[0] / dimensions.width
+					: node.fit[1] / dimensions.height;
 			node._width = node._minWidth = node._maxWidth = dimensions.width * factor;
 			node._height = dimensions.height * factor;
 		} else {
-			node._width = node._minWidth = node._maxWidth = node.width || dimensions.width;
-			node._height = node.height || (dimensions.height * node._width / dimensions.width);
+			node._width =
+				node._minWidth =
+				node._maxWidth =
+					node.width || dimensions.width;
+			node._height =
+				node.height || (dimensions.height * node._width) / dimensions.width;
 
 			if (isNumber(node.maxWidth) && node.maxWidth < node._width) {
 				node._width = node._minWidth = node._maxWidth = node.maxWidth;
-				node._height = node._width * dimensions.height / dimensions.width;
+				node._height = (node._width * dimensions.height) / dimensions.width;
 			}
 
 			if (isNumber(node.maxHeight) && node.maxHeight < node._height) {
 				node._height = node.maxHeight;
-				node._width = node._minWidth = node._maxWidth = node._height * dimensions.width / dimensions.height;
+				node._width =
+					node._minWidth =
+					node._maxWidth =
+						(node._height * dimensions.width) / dimensions.height;
 			}
 
 			if (isNumber(node.minWidth) && node.minWidth > node._width) {
 				node._width = node._minWidth = node._maxWidth = node.minWidth;
-				node._height = node._width * dimensions.height / dimensions.width;
+				node._height = (node._width * dimensions.height) / dimensions.width;
 			}
 
 			if (isNumber(node.minHeight) && node.minHeight > node._height) {
 				node._height = node.minHeight;
-				node._width = node._minWidth = node._maxWidth = node._height * dimensions.width / dimensions.height;
+				node._width =
+					node._minWidth =
+					node._maxWidth =
+						(node._height * dimensions.width) / dimensions.height;
 			}
 		}
 
-		node._alignment = this.styleStack.getProperty('alignment');
+		node._alignment = this.styleStack.getProperty("alignment");
 	}
 
 	convertIfBase64Image(node) {
-		if (/^data:image\/(jpeg|jpg|png);base64,/.test(node.image)) { // base64 image
+		if (/^data:image\/(jpeg|jpg|png);base64,/.test(node.image)) {
+			// base64 image
 			let label = `$$pdfmake$$${this.autoImageIndex++}`;
 			this.pdfDocument.images[label] = node.image;
 			node.image = label;
@@ -138,16 +155,18 @@ class DocMeasure {
 
 		this.measureImageWithDimensions(node, dimensions);
 
-		node.font = this.styleStack.getProperty('font');
+		node.font = this.styleStack.getProperty("font");
 
 		// scale SVG based on final dimension
-		node.svg = this.svgMeasure.writeDimensions(node.svg, { width: node._width, height: node._height });
+		node.svg = this.svgMeasure.writeDimensions(node.svg, {
+			width: node._width,
+			height: node._height,
+		});
 
 		return node;
 	}
 
 	measureLeaf(node) {
-
 		if (node._textRef && node._textRef._textNodeRef.text) {
 			node.text = node._textRef._textNodeRef.text;
 		}
@@ -183,18 +202,31 @@ class DocMeasure {
 				let lineNumberStyle = item._textNodeRef.tocNumberStyle || numberStyle;
 				let destination = getNodeId(item._nodeRef);
 				body.push([
-					{ text: item._textNodeRef.text, linkToDestination: destination, alignment: 'left', style: lineStyle, margin: lineMargin },
-					{ text: '00000', linkToDestination: destination, alignment: 'right', _tocItemRef: item._nodeRef, style: lineNumberStyle, margin: [0, lineMargin[1], 0, lineMargin[3]] }
+					{
+						text: item._textNodeRef.text,
+						linkToDestination: destination,
+						alignment: "left",
+						style: lineStyle,
+						margin: lineMargin,
+					},
+					{
+						text: "00000",
+						linkToDestination: destination,
+						alignment: "right",
+						_tocItemRef: item._nodeRef,
+						style: lineNumberStyle,
+						margin: [0, lineMargin[1], 0, lineMargin[3]],
+					},
 				]);
 			}
 
 			node.toc._table = {
 				table: {
 					dontBreakRows: true,
-					widths: ['*', 'auto'],
-					body: body
+					widths: ["*", "auto"],
+					body: body,
 				},
-				layout: 'noBorders'
+				layout: "noBorders",
 			};
 
 			node.toc._table = this.measureNode(node.toc._table);
@@ -220,7 +252,7 @@ class DocMeasure {
 	}
 
 	gapSizeForList() {
-		return this.textInlines.sizeOfText('9. ', this.styleStack);
+		return this.textInlines.sizeOfText("9. ", this.styleStack);
 	}
 
 	buildUnorderedMarker(styleStack, gapSize, type) {
@@ -228,14 +260,19 @@ class DocMeasure {
 			// TODO: ascender-based calculations
 			let radius = gapSize.fontSize / 6;
 			return {
-				canvas: [{
-					x: radius,
-					y: (gapSize.height / gapSize.lineHeight) + gapSize.descender - gapSize.fontSize / 3,
-					r1: radius,
-					r2: radius,
-					type: 'ellipse',
-					color: color
-				}]
+				canvas: [
+					{
+						x: radius,
+						y:
+							gapSize.height / gapSize.lineHeight +
+							gapSize.descender -
+							gapSize.fontSize / 3,
+						r1: radius,
+						r2: radius,
+						type: "ellipse",
+						color: color,
+					},
+				],
 			};
 		}
 
@@ -243,14 +280,20 @@ class DocMeasure {
 			// TODO: ascender-based calculations
 			let size = gapSize.fontSize / 3;
 			return {
-				canvas: [{
-					x: 0,
-					y: (gapSize.height / gapSize.lineHeight) + gapSize.descender - (gapSize.fontSize / 3) - (size / 2),
-					h: size,
-					w: size,
-					type: 'rect',
-					color: color
-				}]
+				canvas: [
+					{
+						x: 0,
+						y:
+							gapSize.height / gapSize.lineHeight +
+							gapSize.descender -
+							gapSize.fontSize / 3 -
+							size / 2,
+						h: size,
+						w: size,
+						type: "rect",
+						color: color,
+					},
+				],
 			};
 		}
 
@@ -258,34 +301,42 @@ class DocMeasure {
 			// TODO: ascender-based calculations
 			let radius = gapSize.fontSize / 6;
 			return {
-				canvas: [{
-					x: radius,
-					y: (gapSize.height / gapSize.lineHeight) + gapSize.descender - gapSize.fontSize / 3,
-					r1: radius,
-					r2: radius,
-					type: 'ellipse',
-					lineColor: color
-				}]
+				canvas: [
+					{
+						x: radius,
+						y:
+							gapSize.height / gapSize.lineHeight +
+							gapSize.descender -
+							gapSize.fontSize / 3,
+						r1: radius,
+						r2: radius,
+						type: "ellipse",
+						lineColor: color,
+					},
+				],
 			};
 		}
 
 		let marker;
-		let color = styleStack.getProperty('markerColor') || styleStack.getProperty('color') || 'black';
+		let color =
+			styleStack.getProperty("markerColor") ||
+			styleStack.getProperty("color") ||
+			"black";
 
 		switch (type) {
-			case 'circle':
+			case "circle":
 				marker = buildCircle(gapSize, color);
 				break;
 
-			case 'square':
+			case "square":
 				marker = buildSquare(gapSize, color);
 				break;
 
-			case 'none':
+			case "none":
 				marker = {};
 				break;
 
-			case 'disc':
+			case "disc":
 			default:
 				marker = buildDisc(gapSize, color);
 				break;
@@ -300,7 +351,10 @@ class DocMeasure {
 	buildOrderedMarker(counter, styleStack, type, separator) {
 		function prepareAlpha(counter) {
 			function toAlpha(num) {
-				return (num >= 26 ? toAlpha((num / 26 >> 0) - 1) : '') + 'abcdefghijklmnopqrstuvwxyz'[num % 26 >> 0];
+				return (
+					(num >= 26 ? toAlpha(((num / 26) >> 0) - 1) : "") +
+					"abcdefghijklmnopqrstuvwxyz"[num % 26 >> 0]
+				);
 			}
 
 			if (counter < 1) {
@@ -315,8 +369,22 @@ class DocMeasure {
 				return counter.toString();
 			}
 			let num = counter;
-			let lookup = { M: 1000, CM: 900, D: 500, CD: 400, C: 100, XC: 90, L: 50, XL: 40, X: 10, IX: 9, V: 5, IV: 4, I: 1 };
-			let roman = '';
+			let lookup = {
+				M: 1000,
+				CM: 900,
+				D: 500,
+				CD: 400,
+				C: 100,
+				XC: 90,
+				L: 50,
+				XL: 40,
+				X: 10,
+				IX: 9,
+				V: 5,
+				IV: 4,
+				I: 1,
+			};
+			let roman = "";
 			for (let i in lookup) {
 				while (num >= lookup[i]) {
 					roman += i;
@@ -332,27 +400,27 @@ class DocMeasure {
 
 		let counterText;
 		switch (type) {
-			case 'none':
+			case "none":
 				counterText = null;
 				break;
 
-			case 'upper-alpha':
+			case "upper-alpha":
 				counterText = prepareAlpha(counter).toUpperCase();
 				break;
 
-			case 'lower-alpha':
+			case "lower-alpha":
 				counterText = prepareAlpha(counter);
 				break;
 
-			case 'upper-roman':
+			case "upper-roman":
 				counterText = prepareRoman(counter);
 				break;
 
-			case 'lower-roman':
+			case "lower-roman":
 				counterText = prepareRoman(counter).toLowerCase();
 				break;
 
-			case 'decimal':
+			case "decimal":
 			default:
 				counterText = prepareDecimal(counter);
 				break;
@@ -371,38 +439,50 @@ class DocMeasure {
 				if (separator[1]) {
 					counterText += separator[1];
 				}
-				counterText += ' ';
+				counterText += " ";
 			} else {
 				counterText += `${separator} `;
 			}
 		}
 
 		let textArray = { text: counterText };
-		let markerColor = styleStack.getProperty('markerColor');
+		let markerColor = styleStack.getProperty("markerColor");
 		if (markerColor) {
 			textArray.color = markerColor;
 		}
 
-		return { _inlines: this.textInlines.buildInlines(textArray, styleStack).items };
+		return {
+			_inlines: this.textInlines.buildInlines(textArray, styleStack).items,
+		};
 	}
 
 	measureUnorderedList(node) {
 		let style = this.styleStack.clone();
 		let items = node.ul;
-		node.type = node.type || 'disc';
+		node.type = node.type || "disc";
 		node._gapSize = this.gapSizeForList();
 		node._minWidth = 0;
 		node._maxWidth = 0;
 
 		for (let i = 0, l = items.length; i < l; i++) {
-			let item = items[i] = this.measureNode(items[i]);
+			let item = (items[i] = this.measureNode(items[i]));
 
 			if (!item.ol && !item.ul) {
-				item.listMarker = this.buildUnorderedMarker(style, node._gapSize, item.listType || node.type);
+				item.listMarker = this.buildUnorderedMarker(
+					style,
+					node._gapSize,
+					item.listType || node.type
+				);
 			}
 
-			node._minWidth = Math.max(node._minWidth, items[i]._minWidth + node._gapSize.width);
-			node._maxWidth = Math.max(node._maxWidth, items[i]._maxWidth + node._gapSize.width);
+			node._minWidth = Math.max(
+				node._minWidth,
+				items[i]._minWidth + node._gapSize.width
+			);
+			node._maxWidth = Math.max(
+				node._maxWidth,
+				items[i]._maxWidth + node._gapSize.width
+			);
 		}
 
 		return node;
@@ -411,8 +491,8 @@ class DocMeasure {
 	measureOrderedList(node) {
 		let style = this.styleStack.clone();
 		let items = node.ol;
-		node.type = node.type || 'decimal';
-		node.separator = node.separator || '.';
+		node.type = node.type || "decimal";
+		node.separator = node.separator || ".";
 		node.reversed = node.reversed || false;
 		if (!isNumber(node.start)) {
 			node.start = node.reversed ? items.length : 1;
@@ -423,15 +503,23 @@ class DocMeasure {
 
 		let counter = node.start;
 		for (let i = 0, l = items.length; i < l; i++) {
-			let item = items[i] = this.measureNode(items[i]);
+			let item = (items[i] = this.measureNode(items[i]));
 
 			if (!item.ol && !item.ul) {
 				let counterValue = isNumber(item.counter) ? item.counter : counter;
-				item.listMarker = this.buildOrderedMarker(counterValue, style, item.listType || node.type, node.separator);
+				item.listMarker = this.buildOrderedMarker(
+					counterValue,
+					style,
+					item.listType || node.type,
+					node.separator
+				);
 				if (item.listMarker._inlines) {
-					node._gapSize.width = Math.max(node._gapSize.width, item.listMarker._inlines[0].width);
+					node._gapSize.width = Math.max(
+						node._gapSize.width,
+						item.listMarker._inlines[0].width
+					);
 				}
-			}  // TODO: else - nested lists numbering
+			} // TODO: else - nested lists numbering
 
 			node._minWidth = Math.max(node._minWidth, items[i]._minWidth);
 			node._maxWidth = Math.max(node._maxWidth, items[i]._maxWidth);
@@ -449,7 +537,8 @@ class DocMeasure {
 		for (let i = 0, l = items.length; i < l; i++) {
 			let item = items[i];
 			if (!item.ol && !item.ul) {
-				item.listMarker._minWidth = item.listMarker._maxWidth = node._gapSize.width;
+				item.listMarker._minWidth = item.listMarker._maxWidth =
+					node._gapSize.width;
 			}
 		}
 
@@ -458,7 +547,7 @@ class DocMeasure {
 
 	measureColumns(node) {
 		let columns = node.columns;
-		node._gap = this.styleStack.getProperty('columnGap') || 0;
+		node._gap = this.styleStack.getProperty("columnGap") || 0;
 
 		for (let i = 0, l = columns.length; i < l; i++) {
 			columns[i] = this.measureNode(columns[i]);
@@ -466,7 +555,7 @@ class DocMeasure {
 
 		let measures = ColumnCalculator.measureMinMax(columns);
 
-		let numGaps = (columns.length > 0) ? (columns.length - 1) : 0;
+		let numGaps = columns.length > 0 ? columns.length - 1 : 0;
 		node._minWidth = measures.min + node._gap * numGaps;
 		node._maxWidth = measures.max + node._gap * numGaps;
 
@@ -493,18 +582,31 @@ class DocMeasure {
 				let rowData = node.table.body[row];
 				let data = rowData[col];
 				if (data === undefined) {
-					throw new Error(`Malformed table row, a cell is undefined.\nRow index: ${row}\nColumn index: ${col}\nRow data: ${stringifyNode(rowData)}`);
+					throw new Error(
+						`Malformed table row, a cell is undefined.\nRow index: ${row}\nColumn index: ${col}\nRow data: ${stringifyNode(
+							rowData
+						)}`
+					);
 				}
-				if (data === null) { // transform to object
-					data = '';
+				if (data === null) {
+					// transform to object
+					data = "";
 				}
 
 				if (!data._span) {
-					data = rowData[col] = this.styleStack.auto(data, measureCb(this, data));
+					data = rowData[col] = this.styleStack.auto(
+						data,
+						measureCb(this, data)
+					);
 
 					if (data.colSpan && data.colSpan > 1) {
 						markSpans(rowData, col, data.colSpan);
-						colSpans.push({ col: col, span: data.colSpan, minWidth: data._minWidth, maxWidth: data._maxWidth });
+						colSpans.push({
+							col: col,
+							span: data.colSpan,
+							minWidth: data._minWidth,
+							maxWidth: data._maxWidth,
+						});
 					} else {
 						c._minWidth = Math.max(c._minWidth, data._minWidth);
 						c._maxWidth = Math.max(c._maxWidth, data._maxWidth);
@@ -529,8 +631,8 @@ class DocMeasure {
 		function measureCb(_this, data) {
 			return () => {
 				if (isObject(data)) {
-					data.fillColor = _this.styleStack.getProperty('fillColor');
-					data.fillOpacity = _this.styleStack.getProperty('fillOpacity');
+					data.fillColor = _this.styleStack.getProperty("fillColor");
+					data.fillOpacity = _this.styleStack.getProperty("fillOpacity");
 				}
 				return _this.measureNode(data);
 			};
@@ -552,17 +654,21 @@ class DocMeasure {
 			let prevRightPadding = 0;
 
 			for (let i = 0, l = node.table.widths.length; i < l; i++) {
-				let lOffset = prevRightPadding + layout.vLineWidth(i, node) + layout.paddingLeft(i, node);
+				let lOffset =
+					prevRightPadding +
+					layout.vLineWidth(i, node) +
+					layout.paddingLeft(i, node);
 				offsets.push(lOffset);
 				totalOffset += lOffset;
 				prevRightPadding = layout.paddingRight(i, node);
 			}
 
-			totalOffset += prevRightPadding + layout.vLineWidth(node.table.widths.length, node);
+			totalOffset +=
+				prevRightPadding + layout.vLineWidth(node.table.widths.length, node);
 
 			return {
 				total: totalOffset,
-				offsets: offsets
+				offsets: offsets,
 			};
 		}
 
@@ -599,8 +705,12 @@ class DocMeasure {
 			let result = { minWidth: 0, maxWidth: 0 };
 
 			for (let i = 0; i < span; i++) {
-				result.minWidth += node.table.widths[col + i]._minWidth + (i ? offsets.offsets[col + i] : 0);
-				result.maxWidth += node.table.widths[col + i]._maxWidth + (i ? offsets.offsets[col + i] : 0);
+				result.minWidth +=
+					node.table.widths[col + i]._minWidth +
+					(i ? offsets.offsets[col + i] : 0);
+				result.maxWidth +=
+					node.table.widths[col + i]._maxWidth +
+					(i ? offsets.offsets[col + i] : 0);
 			}
 
 			return result;
@@ -612,7 +722,7 @@ class DocMeasure {
 					_span: true,
 					_minWidth: 0,
 					_maxWidth: 0,
-					rowSpan: rowData[col].rowSpan
+					rowSpan: rowData[col].rowSpan,
 				};
 			}
 		}
@@ -624,21 +734,23 @@ class DocMeasure {
 					_minWidth: 0,
 					_maxWidth: 0,
 					fillColor: table.body[row][col].fillColor,
-					fillOpacity: table.body[row][col].fillOpacity
+					fillOpacity: table.body[row][col].fillOpacity,
 				};
 			}
 		}
 
 		function extendTableWidths(node) {
 			if (!node.table.widths) {
-				node.table.widths = 'auto';
+				node.table.widths = "auto";
 			}
 
 			if (isString(node.table.widths)) {
 				node.table.widths = [node.table.widths];
 
 				while (node.table.widths.length < node.table.body[0].length) {
-					node.table.widths.push(node.table.widths[node.table.widths.length - 1]);
+					node.table.widths.push(
+						node.table.widths[node.table.widths.length - 1]
+					);
 				}
 			}
 
@@ -659,19 +771,19 @@ class DocMeasure {
 			let vector = node.canvas[i];
 
 			switch (vector.type) {
-				case 'ellipse':
+				case "ellipse":
 					w = Math.max(w, vector.x + vector.r1);
 					h = Math.max(h, vector.y + vector.r2);
 					break;
-				case 'rect':
+				case "rect":
 					w = Math.max(w, vector.x + vector.w);
 					h = Math.max(h, vector.y + vector.h);
 					break;
-				case 'line':
+				case "line":
 					w = Math.max(w, vector.x1, vector.x2);
 					h = Math.max(h, vector.y1, vector.y2);
 					break;
-				case 'polyline':
+				case "polyline":
 					for (let i2 = 0, l2 = vector.points.length; i2 < l2; i2++) {
 						w = Math.max(w, vector.points[i2].x);
 						h = Math.max(h, vector.points[i2].y);
@@ -682,14 +794,14 @@ class DocMeasure {
 
 		node._minWidth = node._maxWidth = w;
 		node._minHeight = node._maxHeight = h;
-		node._alignment = this.styleStack.getProperty('alignment');
+		node._alignment = this.styleStack.getProperty("alignment");
 
 		return node;
 	}
 
 	measureQr(node) {
 		node = qrEncoder.measure(node);
-		node._styleStack = this.styleStack.getProperty('alignment');
+		node._styleStack = this.styleStack.getProperty("alignment");
 		return node;
 	}
 
@@ -697,15 +809,42 @@ class DocMeasure {
 		node._minWidth = 10;
 		node._minHeight = 10;
 
-		let font = StyleContextStack.getStyleProperty(node, this.styleStack, 'font', 'Roboto');
-		let bold = StyleContextStack.getStyleProperty(node,  this.styleStack, 'bold', false);
-		let italics = StyleContextStack.getStyleProperty(node,  this.styleStack, 'italics', false);
-	
+		let font = StyleContextStack.getStyleProperty(
+			node,
+			this.styleStack,
+			"font",
+			"Roboto"
+		);
+		let bold = StyleContextStack.getStyleProperty(
+			node,
+			this.styleStack,
+			"bold",
+			false
+		);
+		let italics = StyleContextStack.getStyleProperty(
+			node,
+			this.styleStack,
+			"italics",
+			false
+		);
+
 		node.font = font;
 		node.bold = bold;
 		node.italics = italics;
 
-		node.alignment = StyleContextStack.getStyleProperty(node,  this.styleStack, 'alignment', 'left');
+		node.alignment = StyleContextStack.getStyleProperty(
+			node,
+			this.styleStack,
+			"alignment",
+			"left"
+		);
+
+		return node;
+	}
+
+	measureAttachment(node) {
+		node._width = node.width || 7;
+		node._height = node.height || 18;
 
 		return node;
 	}

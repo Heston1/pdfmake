@@ -1,7 +1,7 @@
-import TextDecorator from './TextDecorator';
-import TextInlines from './TextInlines';
-import { isNumber } from './helpers/variableType';
-import SVGtoPDF from './3rd-party/svg-to-pdfkit';
+import TextDecorator from "./TextDecorator";
+import TextInlines from "./TextInlines";
+import { isNumber } from "./helpers/variableType";
+import SVGtoPDF from "./3rd-party/svg-to-pdfkit";
 
 const findFont = (fonts, requiredFonts, defaultFont) => {
 	for (let i = 0; i < requiredFonts.length; i++) {
@@ -50,7 +50,7 @@ class Renderer {
 
 		let totalItems = 0;
 		if (this.progressCallback) {
-			pages.forEach(page => {
+			pages.forEach((page) => {
 				totalItems += page.items.length;
 			});
 		}
@@ -66,27 +66,29 @@ class Renderer {
 			let page = pages[i];
 			for (let ii = 0, il = page.items.length; ii < il; ii++) {
 				let item = page.items[ii];
-				
+
 				switch (item.type) {
-					case 'vector':
+					case "vector":
 						this.renderVector(item.item);
 						break;
-					case 'line':
+					case "line":
 						this.renderLine(item.item, item.item.x, item.item.y);
 						break;
-					case 'image':
+					case "image":
 						this.renderImage(item.item);
 						break;
-					case 'svg':
+					case "svg":
 						this.renderSVG(item.item);
 						break;
-					case 'acroform': 
-						this.renderAcroForm(item.item);
+					case "attachment":
+						this.renderAttachment(item.item);
 						break;
-					case 'beginClip':
+					case "acroform":
+						this.renderAcroForm(item.item);
+					case "beginClip":
 						this.beginClip(item.item);
 						break;
-					case 'endClip':
+					case "endClip":
 						this.endClip();
 						break;
 				}
@@ -108,7 +110,7 @@ class Renderer {
 			let textInlines = new TextInlines(null);
 
 			if (_pageNodeRef.positions === undefined) {
-				throw new Error('Page reference id not found');
+				throw new Error("Page reference id not found");
 			}
 
 			let pageNumber = _pageNodeRef.positions[0].pageNumber.toString();
@@ -119,10 +121,10 @@ class Renderer {
 			inline.width = newWidth;
 
 			switch (inline.alignment) {
-				case 'right':
+				case "right":
 					inline.x += diffWidth;
 					break;
-				case 'center':
+				case "center":
 					inline.x += diffWidth / 2;
 					break;
 			}
@@ -147,11 +149,16 @@ class Renderer {
 		//TOOD: lines without differently styled inlines should be written to pdf as one stream
 		for (let i = 0, l = line.inlines.length; i < l; i++) {
 			let inline = line.inlines[i];
-			let shiftToBaseline = lineHeight - ((inline.font.ascender / 1000) * inline.fontSize) - descent;
+			let shiftToBaseline =
+				lineHeight - (inline.font.ascender / 1000) * inline.fontSize - descent;
 
 			if (inline.acroform) {
 				//TODO positioning issue
-				let shiftedY = y + (lineHeight - ((inline.font.ascender / 1000) * inline.height) - descent);
+				let shiftedY =
+					y +
+					(lineHeight -
+						(inline.font.ascender / 1000) * inline.height -
+						descent);
 				inline.y = shiftedY;
 				inline.x = x + inline.x;
 
@@ -160,89 +167,117 @@ class Renderer {
 				if (inline._pageNodeRef) {
 					preparePageNodeRefLine(inline._pageNodeRef, inline);
 				}
-	
+
 				let options = {
 					lineBreak: false,
 					textWidth: inline.width,
 					characterSpacing: inline.characterSpacing,
 					wordCount: 1,
-					link: inline.link
+					link: inline.link,
 				};
-	
+
 				if (inline.linkToDestination) {
 					options.goTo = inline.linkToDestination;
 				}
-	
+
 				if (line.id && i === 0) {
 					options.destination = line.id;
 				}
-	
+
 				if (inline.fontFeatures) {
 					options.features = inline.fontFeatures;
 				}
-	
+
 				let opacity = isNumber(inline.opacity) ? inline.opacity : 1;
 				this.pdfDocument.opacity(opacity);
-				this.pdfDocument.fill(inline.color || 'black');
-	
+				this.pdfDocument.fill(inline.color || "black");
+
 				this.pdfDocument._font = inline.font;
 				this.pdfDocument.fontSize(inline.fontSize);
-	
+
 				let shiftedY = offsetText(y + shiftToBaseline, inline);
 				this.pdfDocument.text(inline.text, x + inline.x, shiftedY, options);
-	
+
 				if (inline.linkToPage) {
-					this.pdfDocument.ref({ Type: 'Action', S: 'GoTo', D: [inline.linkToPage, 0, 0] }).end();
-					this.pdfDocument.annotate(x + inline.x, shiftedY, inline.width, inline.height, { Subtype: 'Link', Dest: [inline.linkToPage - 1, 'XYZ', null, null, null] });
+					this.pdfDocument
+						.ref({ Type: "Action", S: "GoTo", D: [inline.linkToPage, 0, 0] })
+						.end();
+					this.pdfDocument.annotate(
+						x + inline.x,
+						shiftedY,
+						inline.width,
+						inline.height,
+						{
+							Subtype: "Link",
+							Dest: [inline.linkToPage - 1, "XYZ", null, null, null],
+						}
+					);
 				}
 			}
-			
 		}
 
 		// Decorations won't draw correctly for superscript
 		textDecorator.drawDecorations(line, x, y);
-		
 	}
 
 	renderVector(vector) {
 		//TODO: pdf optimization (there's no need to write all properties everytime)
 		this.pdfDocument.lineWidth(vector.lineWidth || 1);
 		if (vector.dash) {
-			this.pdfDocument.dash(vector.dash.length, { space: vector.dash.space || vector.dash.length, phase: vector.dash.phase || 0 });
+			this.pdfDocument.dash(vector.dash.length, {
+				space: vector.dash.space || vector.dash.length,
+				phase: vector.dash.phase || 0,
+			});
 		} else {
 			this.pdfDocument.undash();
 		}
-		this.pdfDocument.lineJoin(vector.lineJoin || 'miter');
-		this.pdfDocument.lineCap(vector.lineCap || 'butt');
+		this.pdfDocument.lineJoin(vector.lineJoin || "miter");
+		this.pdfDocument.lineCap(vector.lineCap || "butt");
 
 		//TODO: clipping
 
 		let gradient = null;
 
 		switch (vector.type) {
-			case 'ellipse':
+			case "ellipse":
 				this.pdfDocument.ellipse(vector.x, vector.y, vector.r1, vector.r2);
 
 				if (vector.linearGradient) {
-					gradient = this.pdfDocument.linearGradient(vector.x - vector.r1, vector.y, vector.x + vector.r1, vector.y);
+					gradient = this.pdfDocument.linearGradient(
+						vector.x - vector.r1,
+						vector.y,
+						vector.x + vector.r1,
+						vector.y
+					);
 				}
 				break;
-			case 'rect':
+			case "rect":
 				if (vector.r) {
-					this.pdfDocument.roundedRect(vector.x, vector.y, vector.w, vector.h, vector.r);
+					this.pdfDocument.roundedRect(
+						vector.x,
+						vector.y,
+						vector.w,
+						vector.h,
+						vector.r
+					);
 				} else {
 					this.pdfDocument.rect(vector.x, vector.y, vector.w, vector.h);
 				}
 
 				if (vector.linearGradient) {
-					gradient = this.pdfDocument.linearGradient(vector.x, vector.y, vector.x + vector.w, vector.y);
+					gradient = this.pdfDocument.linearGradient(
+						vector.x,
+						vector.y,
+						vector.x + vector.w,
+						vector.y
+					);
 				}
 				break;
-			case 'line':
+			case "line":
 				this.pdfDocument.moveTo(vector.x1, vector.y1);
 				this.pdfDocument.lineTo(vector.x2, vector.y2);
 				break;
-			case 'polyline':
+			case "polyline":
 				if (vector.points.length === 0) {
 					break;
 				}
@@ -256,12 +291,12 @@ class Renderer {
 					let p1 = vector.points[0];
 					let pn = vector.points[vector.points.length - 1];
 
-					if (vector.closePath || p1.x === pn.x && p1.y === pn.y) {
+					if (vector.closePath || (p1.x === pn.x && p1.y === pn.y)) {
 						this.pdfDocument.closePath();
 					}
 				}
 				break;
-			case 'path':
+			case "path":
 				this.pdfDocument.path(vector.d);
 				break;
 		}
@@ -282,7 +317,9 @@ class Renderer {
 		}
 
 		let fillOpacity = isNumber(vector.fillOpacity) ? vector.fillOpacity : 1;
-		let strokeOpacity = isNumber(vector.strokeOpacity) ? vector.strokeOpacity : 1;
+		let strokeOpacity = isNumber(vector.strokeOpacity)
+			? vector.strokeOpacity
+			: 1;
 
 		if (vector.color && vector.lineColor) {
 			this.pdfDocument.fillColor(vector.color, fillOpacity);
@@ -292,7 +329,7 @@ class Renderer {
 			this.pdfDocument.fillColor(vector.color, fillOpacity);
 			this.pdfDocument.fill();
 		} else {
-			this.pdfDocument.strokeColor(vector.lineColor || 'black', strokeOpacity);
+			this.pdfDocument.strokeColor(vector.lineColor || "black", strokeOpacity);
 			this.pdfDocument.stroke();
 		}
 	}
@@ -301,39 +338,95 @@ class Renderer {
 		let opacity = isNumber(image.opacity) ? image.opacity : 1;
 		this.pdfDocument.opacity(opacity);
 		if (image.cover) {
-			const align = image.cover.align || 'center';
-			const valign = image.cover.valign || 'center';
+			const align = image.cover.align || "center";
+			const valign = image.cover.valign || "center";
 			const width = image.cover.width ? image.cover.width : image.width;
 			const height = image.cover.height ? image.cover.height : image.height;
 			this.pdfDocument.save();
 			this.pdfDocument.rect(image.x, image.y, width, height).clip();
-			this.pdfDocument.image(image.image, image.x, image.y, { cover: [width, height], align: align, valign: valign });
+			this.pdfDocument.image(image.image, image.x, image.y, {
+				cover: [width, height],
+				align: align,
+				valign: valign,
+			});
 			this.pdfDocument.restore();
 		} else {
-			this.pdfDocument.image(image.image, image.x, image.y, { width: image._width, height: image._height });
+			this.pdfDocument.image(image.image, image.x, image.y, {
+				width: image._width,
+				height: image._height,
+			});
 		}
 		if (image.link) {
-			this.pdfDocument.link(image.x, image.y, image._width, image._height, image.link);
+			this.pdfDocument.link(
+				image.x,
+				image.y,
+				image._width,
+				image._height,
+				image.link
+			);
 		}
 		if (image.linkToPage) {
-			this.pdfDocument.ref({ Type: 'Action', S: 'GoTo', D: [image.linkToPage, 0, 0] }).end();
-			this.pdfDocument.annotate(image.x, image.y, image._width, image._height, { Subtype: 'Link', Dest: [image.linkToPage - 1, 'XYZ', null, null, null] });
+			this.pdfDocument
+				.ref({ Type: "Action", S: "GoTo", D: [image.linkToPage, 0, 0] })
+				.end();
+			this.pdfDocument.annotate(image.x, image.y, image._width, image._height, {
+				Subtype: "Link",
+				Dest: [image.linkToPage - 1, "XYZ", null, null, null],
+			});
 		}
 		if (image.linkToDestination) {
-			this.pdfDocument.goTo(image.x, image.y, image._width, image._height, image.linkToDestination);
+			this.pdfDocument.goTo(
+				image.x,
+				image.y,
+				image._width,
+				image._height,
+				image.linkToDestination
+			);
+		}
+		if (image.linkToFile) {
+			const attachment = this.pdfDocument.provideAttachment(image.linkToFile);
+			this.pdfDocument.fileAnnotation(
+				image.x,
+				image.y,
+				image._width,
+				image._height,
+				attachment,
+				// add empty rectangle as file annotation appearance with the same size as the rendered image
+				{
+					AP: {
+						N: {
+							Type: "XObject",
+							Subtype: "Form",
+							FormType: 1,
+							BBox: [image.x, image.y, image._width, image._height],
+						},
+					},
+				}
+			);
 		}
 	}
 
 	renderSVG(svg) {
-		let options = Object.assign({ width: svg._width, height: svg._height, assumePt: true }, svg.options);
+		let options = Object.assign(
+			{ width: svg._width, height: svg._height, assumePt: true },
+			svg.options
+		);
 		options.fontCallback = (family, bold, italic) => {
-			let fontsFamily = family.split(',').map(f => f.trim().replace(/('|")/g, ''));
-			let font = findFont(this.pdfDocument.fonts, fontsFamily, svg.font || 'Roboto');
+			let fontsFamily = family
+				.split(",")
+				.map((f) => f.trim().replace(/('|")/g, ""));
+			let font = findFont(
+				this.pdfDocument.fonts,
+				fontsFamily,
+				svg.font || "Roboto"
+			);
 
 			let fontFile = this.pdfDocument.getFontFile(font, bold, italic);
 			if (fontFile === null) {
 				let type = this.pdfDocument.getFontType(bold, italic);
-				throw new Error(`Font '${font}' in style '${type}' is not defined in the font section of the document definition.`);
+				throw new Error(
+					`Font '${font}' in style '${type}' is not defined in the font section of the document definition.`
+				);
 			}
 
 			return fontFile;
@@ -342,6 +435,23 @@ class Renderer {
 		SVGtoPDF(this.pdfDocument, svg.svg, svg.x, svg.y, options);
 	}
 
+	renderAttachment(attachment) {
+		const file = this.pdfDocument.provideAttachment(attachment.attachment);
+
+		const options = {};
+		if (attachment.icon) {
+			options.Name = attachment.icon;
+		}
+
+		this.pdfDocument.fileAnnotation(
+			attachment.x,
+			attachment.y,
+			attachment._width,
+			attachment._height,
+			file,
+			options
+		);
+	}
 
 	renderAcroForm(node) {
 		const { font, bold, italics } = node;
@@ -353,16 +463,20 @@ class Renderer {
 
 		const setFont = () => {
 			if (typeof font === "string") {
-				this.pdfDocument._font = this.pdfDocument.provideFont(font, bold, italics);
+				this.pdfDocument._font = this.pdfDocument.provideFont(
+					font,
+					bold,
+					italics
+				);
 			} else {
-				this.pdfDocument._font = font; 
+				this.pdfDocument._font = font;
 			}
 			if (this.hasFormInit) {
 				this.pdfDocument.addFontToAcroFormDict();
 			}
 		};
 
-		if (this.hasFormInit == false)  { 
+		if (this.hasFormInit == false) {
 			setFont();
 			this.pdfDocument.initForm();
 			this.hasFormInit = true;
@@ -373,9 +487,13 @@ class Renderer {
 		if (id == null) {
 			throw new Error(`Acroform field ${id} requires an ID`);
 		}
-	
-		let width = node.width || node.availableWidth || (!isNaN(node._calcWidth) && node._calcWidth) || node._minWidth; 
-		if (node.width == '*') {
+
+		let width =
+			node.width ||
+			node.availableWidth ||
+			(!isNaN(node._calcWidth) && node._calcWidth) ||
+			node._minWidth;
+		if (node.width == "*") {
 			width = node.availableWidth;
 		}
 
@@ -404,7 +522,7 @@ class Renderer {
 			case "formCombo":
 				resolvedType = "formCombo";
 				break;
-			case "checkbox": 
+			case "checkbox":
 			case "formCheckbox":
 				resolvedType = "formCheckbox";
 				break;
@@ -417,12 +535,21 @@ class Renderer {
 				throw new Error(`Unrecognized acroform type: ${type}`);
 		}
 
-		this.pdfDocument[resolvedType](id, node.x, node.y, width, node.height, options);
+		this.pdfDocument[resolvedType](
+			id,
+			node.x,
+			node.y,
+			width,
+			node.height,
+			options
+		);
 	}
 
 	beginClip(rect) {
 		this.pdfDocument.save();
-		this.pdfDocument.addContent(`${rect.x} ${rect.y} ${rect.width} ${rect.height} re`);
+		this.pdfDocument.addContent(
+			`${rect.x} ${rect.y} ${rect.width} ${rect.height} re`
+		);
 		this.pdfDocument.clip();
 	}
 
@@ -438,7 +565,12 @@ class Renderer {
 
 		this.pdfDocument.save();
 
-		this.pdfDocument.rotate(watermark.angle, { origin: [this.pdfDocument.page.width / 2, this.pdfDocument.page.height / 2] });
+		this.pdfDocument.rotate(watermark.angle, {
+			origin: [
+				this.pdfDocument.page.width / 2,
+				this.pdfDocument.page.height / 2,
+			],
+		});
 
 		let x = this.pdfDocument.page.width / 2 - watermark._size.size.width / 2;
 		let y = this.pdfDocument.page.height / 2 - watermark._size.size.height / 2;
@@ -451,7 +583,10 @@ class Renderer {
 	}
 
 	_updatePageOrientationInOptions(currentPage) {
-		let previousPageOrientation = this.pdfDocument.options.size[0] > this.pdfDocument.options.size[1] ? 'landscape' : 'portrait';
+		let previousPageOrientation =
+			this.pdfDocument.options.size[0] > this.pdfDocument.options.size[1]
+				? "landscape"
+				: "portrait";
 
 		if (currentPage.pageSize.orientation !== previousPageOrientation) {
 			let width = this.pdfDocument.options.size[0];

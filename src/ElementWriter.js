@@ -1,7 +1,7 @@
-import { isNumber } from './helpers/variableType';
-import { pack, offsetVector } from './helpers/tools';
-import DocumentContext from './DocumentContext';
-import { EventEmitter } from 'events';
+import { isNumber } from "./helpers/variableType";
+import { pack, offsetVector } from "./helpers/tools";
+import DocumentContext from "./DocumentContext";
+import { EventEmitter } from "events";
 
 /**
  * A line/vector writer, which adds elements to current page and sets
@@ -23,7 +23,7 @@ class ElementWriter extends EventEmitter {
 		let context = this.context();
 		let page = context.getCurrentPage();
 		let position = this.getCurrentPositionOnPage();
-		
+
 		if (context.availableHeight < height || !page) {
 			return false;
 		}
@@ -33,16 +33,20 @@ class ElementWriter extends EventEmitter {
 
 		this.alignLine(line);
 
-		addPageItem(page, {
-			type: 'line',
-			item: line
-		}, index);
-		this.emit('lineAdded', line);
+		addPageItem(
+			page,
+			{
+				type: "line",
+				item: line,
+			},
+			index
+		);
+		this.emit("lineAdded", line);
 
 		if (!dontUpdateContextPosition) {
 			context.moveDown(height);
 		}
-		
+
 		return position;
 	}
 
@@ -50,14 +54,15 @@ class ElementWriter extends EventEmitter {
 		let width = this.context().availableWidth;
 		let lineWidth = line.getWidth();
 
-		let alignment = line.inlines && line.inlines.length > 0 && line.inlines[0].alignment;
+		let alignment =
+			line.inlines && line.inlines.length > 0 && line.inlines[0].alignment;
 
 		let offset = 0;
 		switch (alignment) {
-			case 'right':
+			case "right":
 				offset = width - lineWidth;
 				break;
-			case 'center':
+			case "center":
 				offset = (width - lineWidth) / 2;
 				break;
 		}
@@ -66,10 +71,12 @@ class ElementWriter extends EventEmitter {
 			line.x = (line.x || 0) + offset;
 		}
 
-		if (alignment === 'justify' &&
+		if (
+			alignment === "justify" &&
 			!line.newLineForced &&
 			!line.lastLineInParagraph &&
-			line.inlines.length > 1) {
+			line.inlines.length > 1
+		) {
 			let additionalSpacing = (width - lineWidth) / (line.inlines.length - 1);
 
 			for (let i = 1, l = line.inlines.length; i < l; i++) {
@@ -86,7 +93,12 @@ class ElementWriter extends EventEmitter {
 		let page = context.getCurrentPage();
 		let position = this.getCurrentPositionOnPage();
 
-		if (!page || (image.absolutePosition === undefined && context.availableHeight < image._height && page.items.length > 0)) {
+		if (
+			!page ||
+			(image.absolutePosition === undefined &&
+				context.availableHeight < image._height &&
+				page.items.length > 0)
+		) {
 			return false;
 		}
 
@@ -99,10 +111,14 @@ class ElementWriter extends EventEmitter {
 
 		this.alignImage(image);
 
-		addPageItem(page, {
-			type: 'image',
-			item: image
-		}, index);
+		addPageItem(
+			page,
+			{
+				type: "image",
+				item: image,
+			},
+			index
+		);
 
 		context.moveDown(image._height);
 
@@ -115,7 +131,10 @@ class ElementWriter extends EventEmitter {
 		let positions = [];
 		let height = node._minHeight;
 
-		if (!page || (node.absolutePosition === undefined && context.availableHeight < height)) {
+		if (
+			!page ||
+			(node.absolutePosition === undefined && context.availableHeight < height)
+		) {
 			// TODO: support for canvas larger than a page
 			// TODO: support for other overflow methods
 
@@ -143,7 +162,12 @@ class ElementWriter extends EventEmitter {
 		let page = context.getCurrentPage();
 		let position = this.getCurrentPositionOnPage();
 
-		if (!page || (image.absolutePosition === undefined && context.availableHeight < image._height && page.items.length > 0)) {
+		if (
+			!page ||
+			(image.absolutePosition === undefined &&
+				context.availableHeight < image._height &&
+				page.items.length > 0)
+		) {
 			return false;
 		}
 
@@ -156,10 +180,14 @@ class ElementWriter extends EventEmitter {
 
 		this.alignImage(image);
 
-		addPageItem(page, {
-			type: 'svg',
-			item: image
-		}, index);
+		addPageItem(
+			page,
+			{
+				type: "svg",
+				item: image,
+			},
+			index
+		);
 
 		context.moveDown(image._height);
 
@@ -171,7 +199,11 @@ class ElementWriter extends EventEmitter {
 		let page = context.getCurrentPage();
 		let position = this.getCurrentPositionOnPage();
 
-		if (!page || (qr.absolutePosition === undefined && context.availableHeight < qr._height)) {
+		if (
+			!page ||
+			(qr.absolutePosition === undefined &&
+				context.availableHeight < qr._height)
+		) {
 			return false;
 		}
 
@@ -196,11 +228,46 @@ class ElementWriter extends EventEmitter {
 		return position;
 	}
 
+	addAttachment(attachment, index) {
+		let context = this.context();
+		let page = context.getCurrentPage();
+		let position = this.getCurrentPositionOnPage();
+
+		if (
+			!page ||
+			(attachment.absolutePosition === undefined &&
+				context.availableHeight < attachment._height &&
+				page.items.length > 0)
+		) {
+			return false;
+		}
+
+		if (attachment._x === undefined) {
+			attachment._x = attachment.x || 0;
+		}
+
+		attachment.x = context.x + attachment._x;
+		attachment.y = context.y;
+
+		addPageItem(
+			page,
+			{
+				type: "attachment",
+				item: attachment,
+			},
+			index
+		);
+
+		context.moveDown(attachment._height);
+
+		return position;
+	}
+
 	addAcroForm(node, index) {
 		let context = this.context();
 		let page = context.getCurrentPage();
 		let position = this.getCurrentPositionOnPage();
-		
+
 		if (!page) {
 			return false;
 		}
@@ -209,18 +276,19 @@ class ElementWriter extends EventEmitter {
 			node._x = node.x || 0;
 		}
 
-		addPageItem(page, {
-			type: 'acroform',
-			item: node
-		}, index);
-	
+		addPageItem(
+			page,
+			{
+				type: "acroform",
+				item: node,
+			},
+			index
+		);
+
 		node.x = context.x + node._x;
 		node.y = context.y;
 
-		
 		context.moveDown(node.height || node._minHeight);
-
-		return position;
 	}
 
 	alignImage(image) {
@@ -228,10 +296,10 @@ class ElementWriter extends EventEmitter {
 		let imageWidth = image._minWidth;
 		let offset = 0;
 		switch (image._alignment) {
-			case 'right':
+			case "right":
 				offset = width - imageWidth;
 				break;
-			case 'center':
+			case "center":
 				offset = (width - imageWidth) / 2;
 				break;
 		}
@@ -246,15 +314,15 @@ class ElementWriter extends EventEmitter {
 		let canvasWidth = node._minWidth;
 		let offset = 0;
 		switch (node._alignment) {
-			case 'right':
+			case "right":
 				offset = width - canvasWidth;
 				break;
-			case 'center':
+			case "center":
 				offset = (width - canvasWidth) / 2;
 				break;
 		}
 		if (offset) {
-			node.canvas.forEach(vector => {
+			node.canvas.forEach((vector) => {
 				offsetVector(vector, offset, 0);
 			});
 		}
@@ -266,11 +334,19 @@ class ElementWriter extends EventEmitter {
 		let position = this.getCurrentPositionOnPage();
 
 		if (page) {
-			offsetVector(vector, ignoreContextX ? 0 : context.x, ignoreContextY ? 0 : context.y);
-			addPageItem(page, {
-				type: 'vector',
-				item: vector
-			}, index);
+			offsetVector(
+				vector,
+				ignoreContextX ? 0 : context.x,
+				ignoreContextY ? 0 : context.y
+			);
+			addPageItem(
+				page,
+				{
+					type: "vector",
+					item: vector,
+				},
+				index
+			);
 			return position;
 		}
 	}
@@ -279,8 +355,8 @@ class ElementWriter extends EventEmitter {
 		let ctx = this.context();
 		let page = ctx.getCurrentPage();
 		page.items.push({
-			type: 'beginClip',
-			item: { x: ctx.x, y: ctx.y, width: width, height: height }
+			type: "beginClip",
+			item: { x: ctx.x, y: ctx.y, width: width, height: height },
 		});
 		return true;
 	}
@@ -289,12 +365,17 @@ class ElementWriter extends EventEmitter {
 		let ctx = this.context();
 		let page = ctx.getCurrentPage();
 		page.items.push({
-			type: 'endClip'
+			type: "endClip",
 		});
 		return true;
 	}
 
-	addFragment(block, useBlockXOffset, useBlockYOffset, dontUpdateContextPosition) {
+	addFragment(
+		block,
+		useBlockXOffset,
+		useBlockYOffset,
+		dontUpdateContextPosition
+	) {
 		let ctx = this.context();
 		let page = ctx.getCurrentPage();
 
@@ -302,43 +383,47 @@ class ElementWriter extends EventEmitter {
 			return false;
 		}
 
-		block.items.forEach(item => {
+		block.items.forEach((item) => {
 			switch (item.type) {
-				case 'line':
+				case "line":
 					var l = item.item.clone();
 
 					if (l._node) {
 						l._node.positions[0].pageNumber = ctx.page + 1;
 					}
-					l.x = (l.x || 0) + (useBlockXOffset ? (block.xOffset || 0) : ctx.x);
-					l.y = (l.y || 0) + (useBlockYOffset ? (block.yOffset || 0) : ctx.y);
+					l.x = (l.x || 0) + (useBlockXOffset ? block.xOffset || 0 : ctx.x);
+					l.y = (l.y || 0) + (useBlockYOffset ? block.yOffset || 0 : ctx.y);
 
 					page.items.push({
-						type: 'line',
-						item: l
+						type: "line",
+						item: l,
 					});
 					break;
 
-				case 'vector':
+				case "vector":
 					var v = pack(item.item);
 
-					offsetVector(v, useBlockXOffset ? (block.xOffset || 0) : ctx.x, useBlockYOffset ? (block.yOffset || 0) : ctx.y);
+					offsetVector(
+						v,
+						useBlockXOffset ? block.xOffset || 0 : ctx.x,
+						useBlockYOffset ? block.yOffset || 0 : ctx.y
+					);
 					page.items.push({
-						type: 'vector',
-						item: v
+						type: "vector",
+						item: v,
 					});
 					break;
 
-				case 'image':
-				case 'svg':
+				case "image":
+				case "svg":
 					var img = pack(item.item);
 
-					img.x = (img.x || 0) + (useBlockXOffset ? (block.xOffset || 0) : ctx.x);
-					img.y = (img.y || 0) + (useBlockYOffset ? (block.yOffset || 0) : ctx.y);
+					img.x = (img.x || 0) + (useBlockXOffset ? block.xOffset || 0 : ctx.x);
+					img.y = (img.y || 0) + (useBlockYOffset ? block.yOffset || 0 : ctx.y);
 
 					page.items.push({
 						type: item.type,
-						item: img
+						item: img,
 					});
 					break;
 			}
@@ -363,12 +448,18 @@ class ElementWriter extends EventEmitter {
 	 */
 	pushContext(contextOrWidth, height) {
 		if (contextOrWidth === undefined) {
-			height = this.context().getCurrentPage().height - this.context().pageMargins.top - this.context().pageMargins.bottom;
+			height =
+				this.context().getCurrentPage().height -
+				this.context().pageMargins.top -
+				this.context().pageMargins.bottom;
 			contextOrWidth = this.context().availableWidth;
 		}
 
 		if (isNumber(contextOrWidth)) {
-			contextOrWidth = new DocumentContext({ width: contextOrWidth, height: height }, { left: 0, right: 0, top: 0, bottom: 0 });
+			contextOrWidth = new DocumentContext(
+				{ width: contextOrWidth, height: height },
+				{ left: 0, right: 0, top: 0, bottom: 0 }
+			);
 		}
 
 		this.contextStack.push(this.context());
@@ -385,7 +476,12 @@ class ElementWriter extends EventEmitter {
 }
 
 function addPageItem(page, item, index) {
-	if (index === null || index === undefined || index < 0 || index > page.items.length) {
+	if (
+		index === null ||
+		index === undefined ||
+		index < 0 ||
+		index > page.items.length
+	) {
 		page.items.push(item);
 	} else {
 		page.items.splice(index, 0, item);

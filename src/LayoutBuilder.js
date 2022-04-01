@@ -1,18 +1,18 @@
-import DocPreprocessor from './DocPreprocessor';
-import DocMeasure from './DocMeasure';
-import DocumentContext from './DocumentContext';
-import PageElementWriter from './PageElementWriter';
-import ColumnCalculator from './columnCalculator';
-import TableProcessor from './TableProcessor';
-import Line from './Line';
-import { isString, isValue, isNumber } from './helpers/variableType';
-import { stringifyNode, getNodeId } from './helpers/node';
-import { pack, offsetVector } from './helpers/tools';
-import TextInlines from './TextInlines';
-import StyleContextStack from './StyleContextStack';
+import DocPreprocessor from "./DocPreprocessor";
+import DocMeasure from "./DocMeasure";
+import DocumentContext from "./DocumentContext";
+import PageElementWriter from "./PageElementWriter";
+import ColumnCalculator from "./columnCalculator";
+import TableProcessor from "./TableProcessor";
+import Line from "./Line";
+import { isString, isValue, isNumber } from "./helpers/variableType";
+import { stringifyNode, getNodeId } from "./helpers/node";
+import { pack, offsetVector } from "./helpers/tools";
+import TextInlines from "./TextInlines";
+import StyleContextStack from "./StyleContextStack";
 
 function addAll(target, otherArray) {
-	otherArray.forEach(item => {
+	otherArray.forEach((item) => {
 		target.push(item);
 	});
 }
@@ -64,28 +64,46 @@ class LayoutBuilder {
 		watermark,
 		pageBreakBeforeFct
 	) {
-
 		function addPageBreaksIfNecessary(linearNodeList, pages) {
-
-			if (typeof pageBreakBeforeFct !== 'function') {
+			if (typeof pageBreakBeforeFct !== "function") {
 				return false;
 			}
 
-			linearNodeList = linearNodeList.filter(node => node.positions.length > 0);
+			linearNodeList = linearNodeList.filter(
+				(node) => node.positions.length > 0
+			);
 
-			linearNodeList.forEach(node => {
+			linearNodeList.forEach((node) => {
 				let nodeInfo = {};
 				[
-					'id', 'text', 'ul', 'ol', 'table', 'image', 'qr', 'canvas', 'svg', 'columns',
-					'headlineLevel', 'style', 'pageBreak', 'pageOrientation', 'acroForm', 'type', 'options',
-					'width', 'height'
-				].forEach(key => {
+					"id",
+					"text",
+					"ul",
+					"ol",
+					"table",
+					"image",
+					"qr",
+					"canvas",
+					"svg",
+					"columns",
+					"headlineLevel",
+					"style",
+					"pageBreak",
+					"pageOrientation",
+					"acroForm",
+					"type",
+					"options",
+					"width",
+					"height",
+				].forEach((key) => {
 					if (node[key] !== undefined) {
 						nodeInfo[key] = node[key];
 					}
 				});
 				nodeInfo.startPosition = node.positions[0];
-				nodeInfo.pageNumbers = Array.from(new Set(node.positions.map(node => node.pageNumber)));
+				nodeInfo.pageNumbers = Array.from(
+					new Set(node.positions.map((node) => node.pageNumber))
+				);
 				nodeInfo.pages = pages.length;
 				nodeInfo.stack = Array.isArray(node.stack);
 
@@ -94,7 +112,7 @@ class LayoutBuilder {
 
 			for (let index = 0; index < linearNodeList.length; index++) {
 				let node = linearNodeList[index];
-				if (node.pageBreak !== 'before' && !node.pageBreakCalculated) {
+				if (node.pageBreak !== "before" && !node.pageBreakCalculated) {
 					node.pageBreakCalculated = true;
 					let pageNumber = node.nodeInfo.pageNumbers[0];
 
@@ -102,8 +120,16 @@ class LayoutBuilder {
 						pageBreakBeforeFct(node.nodeInfo, {
 							getFollowingNodesOnPage: () => {
 								let followingNodesOnPage = [];
-								for (let ii = index + 1, l = linearNodeList.length; ii < l; ii++) {
-									if (linearNodeList[ii].nodeInfo.pageNumbers.indexOf(pageNumber) > -1) {
+								for (
+									let ii = index + 1, l = linearNodeList.length;
+									ii < l;
+									ii++
+								) {
+									if (
+										linearNodeList[ii].nodeInfo.pageNumbers.indexOf(
+											pageNumber
+										) > -1
+									) {
 										followingNodesOnPage.push(linearNodeList[ii].nodeInfo);
 									}
 								}
@@ -111,8 +137,16 @@ class LayoutBuilder {
 							},
 							getNodesOnNextPage: () => {
 								let nodesOnNextPage = [];
-								for (let ii = index + 1, l = linearNodeList.length; ii < l; ii++) {
-									if (linearNodeList[ii].nodeInfo.pageNumbers.indexOf(pageNumber + 1) > -1) {
+								for (
+									let ii = index + 1, l = linearNodeList.length;
+									ii < l;
+									ii++
+								) {
+									if (
+										linearNodeList[ii].nodeInfo.pageNumbers.indexOf(
+											pageNumber + 1
+										) > -1
+									) {
 										nodesOnNextPage.push(linearNodeList[ii].nodeInfo);
 									}
 								}
@@ -121,7 +155,11 @@ class LayoutBuilder {
 							getPreviousNodesOnPage: () => {
 								let previousNodesOnPage = [];
 								for (let ii = 0; ii < index; ii++) {
-									if (linearNodeList[ii].nodeInfo.pageNumbers.indexOf(pageNumber) > -1) {
+									if (
+										linearNodeList[ii].nodeInfo.pageNumbers.indexOf(
+											pageNumber
+										) > -1
+									) {
 										previousNodesOnPage.push(linearNodeList[ii].nodeInfo);
 									}
 								}
@@ -129,7 +167,7 @@ class LayoutBuilder {
 							},
 						})
 					) {
-						node.pageBreak = 'before';
+						node.pageBreak = "before";
 						return true;
 					}
 				}
@@ -139,18 +177,42 @@ class LayoutBuilder {
 		}
 
 		this.docPreprocessor = new DocPreprocessor();
-		this.docMeasure = new DocMeasure(pdfDocument, styleDictionary, defaultStyle, this.svgMeasure, this.tableLayouts);
+		this.docMeasure = new DocMeasure(
+			pdfDocument,
+			styleDictionary,
+			defaultStyle,
+			this.svgMeasure,
+			this.tableLayouts
+		);
 
 		function resetXYs(result) {
-			result.linearNodeList.forEach(node => {
+			result.linearNodeList.forEach((node) => {
 				node.resetXY();
 			});
 		}
 
-		let result = this.tryLayoutDocument(docStructure, pdfDocument, styleDictionary, defaultStyle, background, header, footer, watermark);
+		let result = this.tryLayoutDocument(
+			docStructure,
+			pdfDocument,
+			styleDictionary,
+			defaultStyle,
+			background,
+			header,
+			footer,
+			watermark
+		);
 		while (addPageBreaksIfNecessary(result.linearNodeList, result.pages)) {
 			resetXYs(result);
-			result = this.tryLayoutDocument(docStructure, pdfDocument, styleDictionary, defaultStyle, background, header, footer, watermark);
+			result = this.tryLayoutDocument(
+				docStructure,
+				pdfDocument,
+				styleDictionary,
+				defaultStyle,
+				background,
+				header,
+				footer,
+				watermark
+			);
 		}
 
 		return result.pages;
@@ -166,15 +228,15 @@ class LayoutBuilder {
 		footer,
 		watermark
 	) {
-
 		this.linearNodeList = [];
 		docStructure = this.docPreprocessor.preprocessDocument(docStructure);
 		docStructure = this.docMeasure.measureDocument(docStructure);
 
 		this.writer = new PageElementWriter(
-			new DocumentContext(this.pageSize, this.pageMargins));
+			new DocumentContext(this.pageSize, this.pageMargins)
+		);
 
-		this.writer.context().addListener('pageAdded', () => {
+		this.writer.context().addListener("pageAdded", () => {
 			this.addBackground(background);
 		});
 
@@ -185,11 +247,15 @@ class LayoutBuilder {
 			this.addWatermark(watermark, pdfDocument, defaultStyle);
 		}
 
-		return { pages: this.writer.context().pages, linearNodeList: this.linearNodeList };
+		return {
+			pages: this.writer.context().pages,
+			linearNodeList: this.linearNodeList,
+		};
 	}
 
 	addBackground(background) {
-		let backgroundGetter = typeof background === 'function' ? background : () => background;
+		let backgroundGetter =
+			typeof background === "function" ? background : () => background;
 
 		let context = this.writer.context();
 		let pageSize = context.getCurrentPage().pageSize;
@@ -206,8 +272,12 @@ class LayoutBuilder {
 	}
 
 	addStaticRepeatable(headerOrFooter, sizeFunction) {
-		this.addDynamicRepeatable(() => // copy to new object
-			JSON.parse(JSON.stringify(headerOrFooter)), sizeFunction);
+		this.addDynamicRepeatable(
+			() =>
+				// copy to new object
+				JSON.parse(JSON.stringify(headerOrFooter)),
+			sizeFunction
+		);
 	}
 
 	addDynamicRepeatable(nodeGetter, sizeFunction) {
@@ -216,10 +286,17 @@ class LayoutBuilder {
 		for (let pageIndex = 0, l = pages.length; pageIndex < l; pageIndex++) {
 			this.writer.context().page = pageIndex;
 
-			let node = nodeGetter(pageIndex + 1, l, this.writer.context().pages[pageIndex].pageSize);
+			let node = nodeGetter(
+				pageIndex + 1,
+				l,
+				this.writer.context().pages[pageIndex].pageSize
+			);
 
 			if (node) {
-				let sizes = sizeFunction(this.writer.context().getCurrentPage().pageSize, this.pageMargins);
+				let sizes = sizeFunction(
+					this.writer.context().getCurrentPage().pageSize,
+					this.pageMargins
+				);
 				this.writer.beginUnbreakableBlock(sizes.width, sizes.height);
 				node = this.docPreprocessor.preprocessDocument(node);
 				this.processNode(this.docMeasure.measureDocument(node));
@@ -233,23 +310,23 @@ class LayoutBuilder {
 			x: 0,
 			y: 0,
 			width: pageSize.width,
-			height: pageMargins.top
+			height: pageMargins.top,
 		});
 
 		const footerSizeFct = (pageSize, pageMargins) => ({
 			x: 0,
 			y: pageSize.height - pageMargins.bottom,
 			width: pageSize.width,
-			height: pageMargins.bottom
+			height: pageMargins.bottom,
 		});
 
-		if (typeof header === 'function') {
+		if (typeof header === "function") {
 			this.addDynamicRepeatable(header, headerSizeFct);
 		} else if (header) {
 			this.addStaticRepeatable(header, headerSizeFct);
 		}
 
-		if (typeof footer === 'function') {
+		if (typeof footer === "function") {
 			this.addDynamicRepeatable(footer, footerSizeFct);
 		} else if (footer) {
 			this.addStaticRepeatable(footer, footerSizeFct);
@@ -258,36 +335,47 @@ class LayoutBuilder {
 
 	addWatermark(watermark, pdfDocument, defaultStyle) {
 		if (isString(watermark)) {
-			watermark = { 'text': watermark };
+			watermark = { text: watermark };
 		}
 
-		if (!watermark.text) { // empty watermark text
+		if (!watermark.text) {
+			// empty watermark text
 			return;
 		}
 
-		watermark.font = watermark.font || defaultStyle.font || 'Roboto';
-		watermark.fontSize = watermark.fontSize || 'auto';
-		watermark.color = watermark.color || 'black';
+		watermark.font = watermark.font || defaultStyle.font || "Roboto";
+		watermark.fontSize = watermark.fontSize || "auto";
+		watermark.color = watermark.color || "black";
 		watermark.opacity = isNumber(watermark.opacity) ? watermark.opacity : 0.6;
 		watermark.bold = watermark.bold || false;
 		watermark.italics = watermark.italics || false;
 		watermark.angle = isValue(watermark.angle) ? watermark.angle : null;
 
 		if (watermark.angle === null) {
-			watermark.angle = Math.atan2(this.pageSize.height, this.pageSize.width) * -180 / Math.PI;
+			watermark.angle =
+				(Math.atan2(this.pageSize.height, this.pageSize.width) * -180) /
+				Math.PI;
 		}
 
-		if (watermark.fontSize === 'auto') {
-			watermark.fontSize = getWatermarkFontSize(this.pageSize, watermark, pdfDocument);
+		if (watermark.fontSize === "auto") {
+			watermark.fontSize = getWatermarkFontSize(
+				this.pageSize,
+				watermark,
+				pdfDocument
+			);
 		}
 
 		let watermarkObject = {
 			text: watermark.text,
-			font: pdfDocument.provideFont(watermark.font, watermark.bold, watermark.italics),
+			font: pdfDocument.provideFont(
+				watermark.font,
+				watermark.bold,
+				watermark.italics
+			),
 			fontSize: watermark.fontSize,
 			color: watermark.color,
 			opacity: watermark.opacity,
-			angle: watermark.angle
+			angle: watermark.angle,
 		};
 
 		watermarkObject._size = getWatermarkSize(watermark, pdfDocument);
@@ -299,21 +387,33 @@ class LayoutBuilder {
 
 		function getWatermarkSize(watermark, pdfDocument) {
 			let textInlines = new TextInlines(pdfDocument);
-			let styleContextStack = new StyleContextStack(null, { font: watermark.font, bold: watermark.bold, italics: watermark.italics });
+			let styleContextStack = new StyleContextStack(null, {
+				font: watermark.font,
+				bold: watermark.bold,
+				italics: watermark.italics,
+			});
 
 			styleContextStack.push({
-				fontSize: watermark.fontSize
+				fontSize: watermark.fontSize,
 			});
 
 			let size = textInlines.sizeOfText(watermark.text, styleContextStack);
-			let rotatedSize = textInlines.sizeOfRotatedText(watermark.text, watermark.angle, styleContextStack);
+			let rotatedSize = textInlines.sizeOfRotatedText(
+				watermark.text,
+				watermark.angle,
+				styleContextStack
+			);
 
 			return { size: size, rotatedSize: rotatedSize };
 		}
 
 		function getWatermarkFontSize(pageSize, watermark, pdfDocument) {
 			let textInlines = new TextInlines(pdfDocument);
-			let styleContextStack = new StyleContextStack(null, { font: watermark.font, bold: watermark.bold, italics: watermark.italics });
+			let styleContextStack = new StyleContextStack(null, {
+				font: watermark.font,
+				bold: watermark.bold,
+				italics: watermark.italics,
+			});
 			let rotatedSize;
 
 			/**
@@ -326,9 +426,13 @@ class LayoutBuilder {
 			let c = (a + b) / 2;
 			while (Math.abs(a - b) > 1) {
 				styleContextStack.push({
-					fontSize: c
+					fontSize: c,
 				});
-				rotatedSize = textInlines.sizeOfRotatedText(watermark.text, watermark.angle, styleContextStack);
+				rotatedSize = textInlines.sizeOfRotatedText(
+					watermark.text,
+					watermark.angle,
+					styleContextStack
+				);
 
 				if (rotatedSize.width > pageSize.width) {
 					b = c;
@@ -352,17 +456,17 @@ class LayoutBuilder {
 	}
 
 	processNode(node) {
-		const applyMargins = callback => {
+		const applyMargins = (callback) => {
 			let margin = node._margin;
 
-			if (node.pageBreak === 'before') {
+			if (node.pageBreak === "before") {
 				this.writer.moveToNextPage(node.pageOrientation);
-			} else if (node.pageBreak === 'beforeOdd') {
+			} else if (node.pageBreak === "beforeOdd") {
 				this.writer.moveToNextPage(node.pageOrientation);
 				if ((this.writer.context().page + 1) % 2 === 1) {
 					this.writer.moveToNextPage(node.pageOrientation);
 				}
-			} else if (node.pageBreak === 'beforeEven') {
+			} else if (node.pageBreak === "beforeEven") {
 				this.writer.moveToNextPage(node.pageOrientation);
 				if ((this.writer.context().page + 1) % 2 === 0) {
 					this.writer.moveToNextPage(node.pageOrientation);
@@ -381,14 +485,14 @@ class LayoutBuilder {
 				this.writer.context().moveDown(margin[3]);
 			}
 
-			if (node.pageBreak === 'after') {
+			if (node.pageBreak === "after") {
 				this.writer.moveToNextPage(node.pageOrientation);
-			} else if (node.pageBreak === 'afterOdd') {
+			} else if (node.pageBreak === "afterOdd") {
 				this.writer.moveToNextPage(node.pageOrientation);
 				if ((this.writer.context().page + 1) % 2 === 1) {
 					this.writer.moveToNextPage(node.pageOrientation);
 				}
-			} else if (node.pageBreak === 'afterEven') {
+			} else if (node.pageBreak === "afterEven") {
 				this.writer.moveToNextPage(node.pageOrientation);
 				if ((this.writer.context().page + 1) % 2 === 0) {
 					this.writer.moveToNextPage(node.pageOrientation);
@@ -414,7 +518,9 @@ class LayoutBuilder {
 			let relPosition = node.relativePosition;
 			if (relPosition) {
 				this.writer.context().beginDetachedBlock();
-				this.writer.context().moveToRelative(relPosition.x || 0, relPosition.y || 0);
+				this.writer
+					.context()
+					.moveToRelative(relPosition.x || 0, relPosition.y || 0);
 			}
 
 			if (node.stack) {
@@ -439,10 +545,14 @@ class LayoutBuilder {
 				this.processCanvas(node);
 			} else if (node.qr) {
 				this.processQr(node);
+			} else if (node.attachment) {
+				this.processAttachment(node);
 			} else if (node.acroform) {
 				this.processAcroForm(node);
 			} else if (!node._span) {
-				throw new Error(`Unrecognized document structure: ${stringifyNode(node)}`);
+				throw new Error(
+					`Unrecognized document structure: ${stringifyNode(node)}`
+				);
 			}
 
 			if (absPosition || relPosition) {
@@ -457,7 +567,7 @@ class LayoutBuilder {
 
 	// vertical container
 	processVerticalContainer(node) {
-		node.stack.forEach(item => {
+		node.stack.forEach((item) => {
 			this.processNode(item);
 			addAll(node.positions, item.positions);
 
@@ -496,7 +606,7 @@ class LayoutBuilder {
 	}
 
 	processRow(columns, widths, gaps, tableBody, tableRow, height) {
-		const storePageBreakData = data => {
+		const storePageBreakData = (data) => {
 			let pageDesc;
 
 			for (let i = 0, l = pageBreaks.length; i < l; i++) {
@@ -518,7 +628,7 @@ class LayoutBuilder {
 		let pageBreaks = [];
 		let positions = [];
 
-		this.writer.addListener('pageChanged', storePageBreakData);
+		this.writer.addListener("pageChanged", storePageBreakData);
 
 		widths = widths || columns;
 
@@ -535,7 +645,9 @@ class LayoutBuilder {
 				}
 			}
 
-			this.writer.context().beginColumn(width, leftOffset, getEndingCell(column, i));
+			this.writer
+				.context()
+				.beginColumn(width, leftOffset, getEndingCell(column, i));
 			if (!column._span) {
 				this.processNode(column);
 				addAll(positions, column.positions);
@@ -547,7 +659,7 @@ class LayoutBuilder {
 
 		this.writer.context().completeColumnGroup(height);
 
-		this.writer.removeListener('pageChanged', storePageBreakData);
+		this.writer.removeListener("pageChanged", storePageBreakData);
 
 		return { pageBreaks: pageBreaks, positions: positions };
 
@@ -562,7 +674,9 @@ class LayoutBuilder {
 			if (column.rowSpan && column.rowSpan > 1) {
 				let endingRow = tableRow + column.rowSpan - 1;
 				if (endingRow >= tableBody.length) {
-					throw new Error(`Row span for column ${columnIndex} (with indexes starting from 0) exceeded row count`);
+					throw new Error(
+						`Row span for column ${columnIndex} (with indexes starting from 0) exceeded row count`
+					);
 				}
 				return tableBody[endingRow][columnIndex];
 			}
@@ -573,7 +687,7 @@ class LayoutBuilder {
 
 	// lists
 	processList(orderedList, node) {
-		const addMarkerToFirstLeaf = line => {
+		const addMarkerToFirstLeaf = (line) => {
 			// I'm not very happy with the way list processing is implemented
 			// (both code and algorithm should be rethinked)
 			if (nextMarker) {
@@ -589,7 +703,8 @@ class LayoutBuilder {
 					let markerLine = new Line(this.pageSize.width);
 					markerLine.addInline(marker._inlines[0]);
 					markerLine.x = -marker._minWidth;
-					markerLine.y = line.getAscenderHeight() - markerLine.getAscenderHeight();
+					markerLine.y =
+						line.getAscenderHeight() - markerLine.getAscenderHeight();
 					this.writer.addLine(markerLine, true);
 				}
 			}
@@ -602,15 +717,15 @@ class LayoutBuilder {
 
 		let nextMarker;
 
-		this.writer.addListener('lineAdded', addMarkerToFirstLeaf);
+		this.writer.addListener("lineAdded", addMarkerToFirstLeaf);
 
-		items.forEach(item => {
+		items.forEach((item) => {
 			nextMarker = item.listMarker;
 			this.processNode(item);
 			addAll(node.positions, item.positions);
 		});
 
-		this.writer.removeListener('lineAdded', addMarkerToFirstLeaf);
+		this.writer.removeListener("lineAdded", addMarkerToFirstLeaf);
 
 		this.writer.context().addMargin(-gapSize.width);
 	}
@@ -626,7 +741,7 @@ class LayoutBuilder {
 			processor.beginRow(i, this.writer);
 
 			let height;
-			if (typeof rowHeights === 'function') {
+			if (typeof rowHeights === "function") {
 				height = rowHeights(i);
 			} else if (Array.isArray(rowHeights)) {
 				height = rowHeights[i];
@@ -634,11 +749,18 @@ class LayoutBuilder {
 				height = rowHeights;
 			}
 
-			if (height === 'auto') {
+			if (height === "auto") {
 				height = undefined;
 			}
 
-			let result = this.processRow(tableNode.table.body[i], tableNode.table.widths, tableNode._offsets.offsets, tableNode.table.body, i, height);
+			let result = this.processRow(
+				tableNode.table.body[i],
+				tableNode.table.widths,
+				tableNode._offsets.offsets,
+				tableNode.table.body,
+				i,
+				height
+			);
 			addAll(tableNode.positions, result.positions);
 
 			processor.endRow(i, this.writer, result.pageBreaks);
@@ -653,7 +775,7 @@ class LayoutBuilder {
 		if (line && (node.tocItem || node.id)) {
 			line._node = node;
 		}
-		let currentHeight = (line) ? line.getHeight() : 0;
+		let currentHeight = line ? line.getHeight() : 0;
 		let maxHeight = node.maxHeight || -1;
 
 		if (line) {
@@ -703,7 +825,6 @@ class LayoutBuilder {
 	}
 
 	buildNextLine(textNode) {
-
 		function cloneInline(inline) {
 			let newInline = inline.constructor();
 			for (let key in inline) {
@@ -720,13 +841,25 @@ class LayoutBuilder {
 		const textInlines = new TextInlines(null);
 
 		let isForceContinue = false;
-		while (textNode._inlines && textNode._inlines.length > 0 &&
-			(line.hasEnoughSpaceForInline(textNode._inlines[0], textNode._inlines.slice(1)) || isForceContinue)) {
+		while (
+			textNode._inlines &&
+			textNode._inlines.length > 0 &&
+			(line.hasEnoughSpaceForInline(
+				textNode._inlines[0],
+				textNode._inlines.slice(1)
+			) ||
+				isForceContinue)
+		) {
 			let isHardWrap = false;
 			let inline = textNode._inlines.shift();
 			isForceContinue = false;
 
-			if (!inline.noWrap && inline.text && inline.text.length > 1 && inline.width > line.getAvailableWidth()) {
+			if (
+				!inline.noWrap &&
+				inline.text &&
+				inline.text.length > 1 &&
+				inline.width > line.getAvailableWidth()
+			) {
 				let widthPerChar = inline.width / inline.text.length;
 				let maxChars = Math.floor(line.getAvailableWidth() / widthPerChar);
 				if (maxChars < 1) {
@@ -777,10 +910,15 @@ class LayoutBuilder {
 		node.positions.push(position);
 	}
 
-	processAcroForm (node) {
+	processAttachment(node) {
+		let position = this.writer.addAttachment(node);
+		node.positions.push(position);
+	}
+
+	processAcroForm(node) {
 		let availableWidth = this.writer.context().availableWidth;
 		let position = this.writer.addAcroForm(node);
-		node.positions.push(position);	
+		node.positions.push(position);
 		node.availableWidth = availableWidth;
 	}
 }
@@ -791,7 +929,7 @@ function decorateNode(node) {
 	node.positions = [];
 
 	if (Array.isArray(node.canvas)) {
-		node.canvas.forEach(vector => {
+		node.canvas.forEach((vector) => {
 			let x = vector.x;
 			let y = vector.y;
 			let x1 = vector.x1;
@@ -813,7 +951,7 @@ function decorateNode(node) {
 		node.x = x;
 		node.y = y;
 		if (Array.isArray(node.canvas)) {
-			node.canvas.forEach(vector => {
+			node.canvas.forEach((vector) => {
 				vector.resetXY();
 			});
 		}

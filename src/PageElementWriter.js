@@ -1,4 +1,4 @@
-import ElementWriter from './ElementWriter';
+import ElementWriter from "./ElementWriter";
 
 /**
  * An extended ElementWriter which can handle:
@@ -16,7 +16,9 @@ class PageElementWriter extends ElementWriter {
 	}
 
 	addLine(line, dontUpdateContextPosition, index) {
-		return this._fitOnPage(() => super.addLine(line, dontUpdateContextPosition, index));
+		return this._fitOnPage(() =>
+			super.addLine(line, dontUpdateContextPosition, index)
+		);
 	}
 
 	addImage(image, index) {
@@ -35,6 +37,10 @@ class PageElementWriter extends ElementWriter {
 		return this._fitOnPage(() => super.addQr(qr, index));
 	}
 
+	addAttachment(attachment, index) {
+		return this._fitOnPage(() => super.addAttachment(attachment, index));
+	}
+
 	addAcroForm(node, index) {
 		return this._fitOnPage(() => super.addAcroForm(node, index));
 	}
@@ -51,8 +57,20 @@ class PageElementWriter extends ElementWriter {
 		return super.endClip();
 	}
 
-	addFragment(fragment, useBlockXOffset, useBlockYOffset, dontUpdateContextPosition) {
-		return this._fitOnPage(() => super.addFragment(fragment, useBlockXOffset, useBlockYOffset, dontUpdateContextPosition));
+	addFragment(
+		fragment,
+		useBlockXOffset,
+		useBlockYOffset,
+		dontUpdateContextPosition
+	) {
+		return this._fitOnPage(() =>
+			super.addFragment(
+				fragment,
+				useBlockXOffset,
+				useBlockYOffset,
+				dontUpdateContextPosition
+			)
+		);
 	}
 
 	moveToNextPage(pageOrientation) {
@@ -70,10 +88,10 @@ class PageElementWriter extends ElementWriter {
 			}
 		}, this);
 
-		this.emit('pageChanged', {
+		this.emit("pageChanged", {
 			prevPage: nextPage.prevPage,
 			prevY: nextPage.prevY,
-			y: this.context().y
+			y: this.context().y,
 		});
 	}
 
@@ -100,9 +118,15 @@ class PageElementWriter extends ElementWriter {
 				if (nbPages > 1) {
 					// on out-of-context blocs (headers, footers, background) height should be the whole DocumentContext height
 					if (forcedX !== undefined || forcedY !== undefined) {
-						fragment.height = unbreakableContext.getCurrentPage().pageSize.height - unbreakableContext.pageMargins.top - unbreakableContext.pageMargins.bottom;
+						fragment.height =
+							unbreakableContext.getCurrentPage().pageSize.height -
+							unbreakableContext.pageMargins.top -
+							unbreakableContext.pageMargins.bottom;
 					} else {
-						fragment.height = this.context().getCurrentPage().pageSize.height - this.context().pageMargins.top - this.context().pageMargins.bottom;
+						fragment.height =
+							this.context().getCurrentPage().pageSize.height -
+							this.context().pageMargins.top -
+							this.context().pageMargins.bottom;
 						for (let i = 0, l = this.repeatables.length; i < l; i++) {
 							fragment.height -= this.repeatables[i].height;
 						}
@@ -124,7 +148,7 @@ class PageElementWriter extends ElementWriter {
 		let unbreakableContext = this.context();
 		let rep = { items: [] };
 
-		unbreakableContext.pages[0].items.forEach(item => {
+		unbreakableContext.pages[0].items.forEach((item) => {
 			rep.items.push(item);
 		});
 
@@ -154,7 +178,6 @@ class PageElementWriter extends ElementWriter {
 		}
 		return position;
 	}
-
 }
 
 export default PageElementWriter;
