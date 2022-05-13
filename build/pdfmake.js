@@ -2672,7 +2672,7 @@ var PDFEmbeddedFont = /*#__PURE__*/function () {
 
 /* harmony default export */ var pdf_kit_extensions_PDFEmbeddedFont = (PDFEmbeddedFont);
 // EXTERNAL MODULE: ./node_modules/@foliojs-fork/pdfkit/js/pdfkit.es5.js
-var pdfkit_es5 = __webpack_require__(669);
+var pdfkit_es5 = __webpack_require__(3021);
 ;// CONCATENATED MODULE: ./src/pdf-kit-extensions/StandardFonts.js
 var StandardFonts_dirname = "/";
 var StandardFonts_fs = __webpack_require__(643);
@@ -10050,7 +10050,7 @@ var OutputDocument = /*#__PURE__*/function () {
 
 /* harmony default export */ var src_OutputDocument = (OutputDocument);
 // EXTERNAL MODULE: ./node_modules/file-saver/dist/FileSaver.min.js
-var FileSaver_min = __webpack_require__(3310);
+var FileSaver_min = __webpack_require__(4439);
 ;// CONCATENATED MODULE: ./src/browser-extensions/OutputDocumentBrowser.js
 
 
@@ -27187,7 +27187,7 @@ module.exports = /*#__PURE__*/function () {
 
 /***/ }),
 
-/***/ 669:
+/***/ 3021:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -65324,7 +65324,7 @@ module.exports = __webpack_require__(7187).EventEmitter;
 
 /***/ }),
 
-/***/ 3310:
+/***/ 4439:
 /***/ (function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function(a,b){if(true)!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_FACTORY__ = (b),
