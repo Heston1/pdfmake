@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.3.0-beta.2 - 2022-04-01
+
+- Attachments embedding
+- Support passing headers to request for loading font files and images via URL adresses
+
+## 0.3.0-beta.1 - 2022-01-01
 
 - Port code base to ES6+
 - Unify interface for node and browser **(breaking change)**
