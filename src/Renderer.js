@@ -85,6 +85,7 @@ class Renderer {
 						break;
 					case "acroform":
 						this.renderAcroForm(item.item);
+						break;
 					case "beginClip":
 						this.beginClip(item.item);
 						break;

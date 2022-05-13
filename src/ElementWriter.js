@@ -266,7 +266,6 @@ class ElementWriter extends EventEmitter {
 	addAcroForm(node, index) {
 		let context = this.context();
 		let page = context.getCurrentPage();
-		let position = this.getCurrentPositionOnPage();
 
 		if (!page) {
 			return false;
