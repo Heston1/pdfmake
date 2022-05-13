@@ -1,4 +1,4 @@
-/*! pdfmake v0.3.0-beta.1, @license MIT, @link http://pdfmake.org */
+/*! pdfmake v0.3.0-beta.2, @license MIT, @link http://pdfmake.org */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory();
@@ -2672,7 +2672,7 @@ var PDFEmbeddedFont = /*#__PURE__*/function () {
 
 /* harmony default export */ var pdf_kit_extensions_PDFEmbeddedFont = (PDFEmbeddedFont);
 // EXTERNAL MODULE: ./node_modules/@foliojs-fork/pdfkit/js/pdfkit.es5.js
-var pdfkit_es5 = __webpack_require__(3021);
+var pdfkit_es5 = __webpack_require__(7112);
 ;// CONCATENATED MODULE: ./src/pdf-kit-extensions/StandardFonts.js
 var StandardFonts_dirname = "/";
 var StandardFonts_fs = __webpack_require__(643);
@@ -10050,7 +10050,7 @@ var OutputDocument = /*#__PURE__*/function () {
 
 /* harmony default export */ var src_OutputDocument = (OutputDocument);
 // EXTERNAL MODULE: ./node_modules/file-saver/dist/FileSaver.min.js
-var FileSaver_min = __webpack_require__(4439);
+var FileSaver_min = __webpack_require__(4622);
 ;// CONCATENATED MODULE: ./src/browser-extensions/OutputDocumentBrowser.js
 
 
@@ -27187,7 +27187,7 @@ module.exports = /*#__PURE__*/function () {
 
 /***/ }),
 
-/***/ 3021:
+/***/ 7112:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -65324,7 +65324,7 @@ module.exports = __webpack_require__(7187).EventEmitter;
 
 /***/ }),
 
-/***/ 4439:
+/***/ 4622:
 /***/ (function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function(a,b){if(true)!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_FACTORY__ = (b),
